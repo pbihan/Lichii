@@ -1747,7 +1747,23 @@ void Device::RemoveUnsuitableExtensions() {
                        shape.scope == VK_SCOPE_SUBGROUP_KHR;
             });
         };
-        const bool usable = extensions.cooperative_matrix &&
+        // AMD's Windows driver 2.0.353 advertises a 16x16x16 float16 shape on RDNA2, which has no
+        // matrix units, and crashes building these pipelines (zortos293/Lichii#633: RX 6900 XT,
+        // RX 6750 XT). Off on RDNA1/RDNA2 discrete GPUs (device IDs 0x7310-0x743F) with that
+        // driver. EDEN_NX2_NO_COOP_MATRIX=1 turns it off on any GPU, =0 keeps it.
+        const bool amd_rdna2_or_older =
+            properties.driver.driverID == VK_DRIVER_ID_AMD_PROPRIETARY &&
+            properties.properties.vendorID == 0x1002 && properties.properties.deviceID >= 0x7310 &&
+            properties.properties.deviceID <= 0x743F;
+        const char* const no_coop_env = std::getenv("EDEN_NX2_NO_COOP_MATRIX");
+        const bool no_coop_matrix = no_coop_env != nullptr ? no_coop_env[0] == '1'
+                                                           : amd_rdna2_or_older;
+        if (no_coop_matrix && extensions.cooperative_matrix) {
+            LOG_WARNING(Render_Vulkan, "VK_KHR_cooperative_matrix disabled ({})",
+                        no_coop_env != nullptr ? "EDEN_NX2_NO_COOP_MATRIX=1"
+                                               : "AMD driver on RDNA1/RDNA2, zortos293/Lichii#633");
+        }
+        const bool usable = !no_coop_matrix && extensions.cooperative_matrix &&
                             features.cooperative_matrix.cooperativeMatrix &&
                             (properties.cooperative_matrix.cooperativeMatrixSupportedStages &
                              VK_SHADER_STAGE_COMPUTE_BIT) != 0 &&
