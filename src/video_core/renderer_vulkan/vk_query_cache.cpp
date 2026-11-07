@@ -5,6 +5,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 
 #include <cstddef>
+#include <cstdlib>
 #include <limits>
 #include <map>
 #include <memory>
@@ -273,8 +274,22 @@ public:
         // AMD's drivers wait on each query of a WAIT_BIT copy separately (3.8 us per query, ~5 ms
         // a frame in Ocarina). Queries complete in order on the queue, so waiting for the newest
         // one is enough before copying the range without the wait.
-        const bool wait_on_last =
+        // EDEN_NX2_QUERY_WAIT_ALL=1 keeps the per-query wait for A/B runs.
+        static const bool wait_all = [] {
+            const char* value = std::getenv("EDEN_NX2_QUERY_WAIT_ALL");
+            return value != nullptr && value[0] == '1';
+        }();
+        const bool is_amd =
             driver_id == VK_DRIVER_ID_AMD_PROPRIETARY || driver_id == VK_DRIVER_ID_AMD_OPEN_SOURCE;
+        const bool wait_on_last = is_amd && !wait_all;
+        static const bool logged = [&] {
+            LOG_INFO(Render_Vulkan, "Occlusion query resolve: {}",
+                     wait_on_last ? "wait on the last query (AMD)"
+                                  : (is_amd ? "wait on each query (EDEN_NX2_QUERY_WAIT_ALL=1)"
+                                            : "wait on each query"));
+            return true;
+        }();
+        (void)logged;
 
         ApplyBanksWideOp<true>(pending_sync, [&](SamplesQueryBank* bank, size_t start,
                                                  size_t amount) {
