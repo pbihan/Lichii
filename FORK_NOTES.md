@@ -29,6 +29,10 @@ binary crashed in each of four launches of Ocarina of Time, with the log ending 
 seconds after boot or during shader loading. The cause was not determined. Official Lichii builds
 93 and 94 run on the same machine. Whether the commits above fix the crash is not known yet.
 
+This is not a general AMD problem: Frizti v3 runs on an RX 9070 XT with the newer driver 2.0.416
+(see [zortos293/Lichii#378](https://github.com/zortos293/Lichii/pull/378)). The RX 6600 above used
+driver 2.0.353.
+
 ## Things to know before testing
 
 - Frizti v3 reserves two physical cores for the GPU threads on CPUs with 6 or more physical
