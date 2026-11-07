@@ -17,6 +17,8 @@ with these commits on top:
 | fix AMD shader typing, atomic retries and compiler stalls | zortos293/Lichii `68caa6c7` | AMD: builds two Ocarina of Time compute shaders unoptimized, which the AMD driver otherwise spends 6-18 minutes on |
 | don't write render target components the fragment shader does not output | zortos293/Lichii #353 (`79c15169`) | AMD: corrupted pixels above the horizon in Ocarina of Time |
 | `EDEN_AMD_FP16=1` keeps `shaderFloat16` on the AMD driver | this fork, see [zortos293/Lichii#378](https://github.com/zortos293/Lichii/pull/378) | opt-in, off by default |
+| wait once per occlusion query resolve on AMD drivers | conongnang/Lichii `a48dcdf8`, from chuppatricky/Lichii `601d3712d2` | AMD: the driver waits on each query of a `WAIT_BIT` copy (11 ms of GPU time per frame on an RX 9070 XT, as reported there) |
+| `EDEN_NX2_QUERY_WAIT_ALL=1` restores the per-query wait, and the log states which resolve is used | this fork | A/B switch for the commit above |
 | Windows MSVC build only, no release on push | this fork | CI only, do not merge upstream |
 
 Two cherry-picks needed small conflict resolutions (the test list in `src/tests/CMakeLists.txt`
@@ -41,6 +43,8 @@ driver 2.0.353.
   the official cache (`vulkan.fork-v53.bin`) when its own is missing. On the RX 6600, the copied
   cache produced compute pipeline compilation errors; starting from an empty cache avoids that.
 - Without `EDEN_AMD_FP16`, the FP16 change does nothing.
+- The occlusion query change applies to AMD drivers only. Its effect on the RX 6600 had not been
+  measured when it was added.
 
 ## Builds
 
