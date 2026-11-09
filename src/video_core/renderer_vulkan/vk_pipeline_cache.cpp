@@ -437,17 +437,6 @@ namespace {
 // of RAM for the session) and copied it whole at each save, which stalled frames; pipelines built
 // no slower without it.
 bool DriverCachesPipelines(const Device& device) {
-    // EDEN_NX2_VK_PIPELINE_CACHE=1 keeps Eden's own copy on these drivers too. AMD's Windows
-    // driver appears to key its disk cache to the executable, so each new build rebuilt every
-    // cached pipeline at boot (17 minutes for ~9,800 on an RX 6600); the copy depends only on the
-    // driver.
-    static const bool keep_own_copy = [] {
-        const char* value = std::getenv("EDEN_NX2_VK_PIPELINE_CACHE");
-        return value != nullptr && value[0] == '1';
-    }();
-    if (keep_own_copy) {
-        return false;
-    }
     switch (device.GetDriverID()) {
     case VK_DRIVER_ID_NVIDIA_PROPRIETARY:
     case VK_DRIVER_ID_AMD_PROPRIETARY:
