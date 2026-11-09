@@ -3,6 +3,7 @@
 
 #include <algorithm>
 #include <charconv>
+#include <cstdlib>
 
 #include "common/core_pinning.h"
 
@@ -29,13 +30,21 @@ GpuThreadPinning PlanGpuThreadPinning(std::span<const LogicalProcessor> processo
     }
     const u32 front_core = cores[1];
     const u32 back_core = cores[2];
+    // EDEN_NX2_PIN_SIBLINGS=1 (this fork): the front and the back keep one logical processor of
+    // their core and the guest cores may use its SMT sibling. On a 6-core CPU the default plan
+    // leaves 4 cores to the six guest cores (RX 6600 + Ryzen 5 5600G, Ocarina of Time: 29-31 ms
+    // a frame unpinned on one build, 33-41 ms pinned on the next).
+    static const bool share_siblings = [] {
+        const char* value = std::getenv("EDEN_NX2_PIN_SIBLINGS");
+        return value != nullptr && value[0] == '1';
+    }();
     for (const LogicalProcessor& processor : processors) {
         if (processor.efficiency_class != fastest) {
             continue;
         }
-        if (processor.core == front_core) {
+        if (processor.core == front_core && (!share_siblings || plan.front.empty())) {
             plan.front.push_back(processor.id);
-        } else if (processor.core == back_core) {
+        } else if (processor.core == back_core && (!share_siblings || plan.back.empty())) {
             plan.back.push_back(processor.id);
         } else {
             plan.guest.push_back(processor.id);
