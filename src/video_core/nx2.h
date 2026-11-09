@@ -116,10 +116,12 @@ inline void Nx2ClearGpuWrittenPages() {
 /// skip the cache mutexes the split's back holds through each draw. 1 = reads of pages without
 /// images or GPU writes are answered without them, writes to never-GPU-written pages are collected
 /// for the back's next FlushCaching instead of OnCPUWrite; 2 = writes to any page are collected.
+/// 2 by default, as conongnang/Lichii 886c0f3d measured it (Ocarina of Time, RX 9070 XT, Castle
+/// Town: short walk 52.3 -> 57.0 fps); 0 restores the locked path.
 [[nodiscard]] inline int Nx2GuestFastMode() {
     static const int mode = [] {
         const char* value = std::getenv("EDEN_NX2_GUEST_FAST");
-        return value != nullptr ? std::atoi(value) : 0;
+        return value != nullptr ? std::atoi(value) : 2;
     }();
     return mode;
 }
