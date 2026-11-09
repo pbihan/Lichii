@@ -814,6 +814,19 @@ bool PreloadAllPipelines() {
     }();
     return all;
 }
+
+/// EDEN_NX2_EVICT_PIPELINES (this fork): 0 never evicts, 1 evicts as upstream does, which keeps
+/// at most 2000 boot-built pipelines no draw has used. Unset, every boot-built pipeline stays and
+/// the used ones still go after 9000 unused frames: on an RX 6600 with a 9,800-pipeline boot,
+/// upstream's budget evicted 5,877 of them after five minutes, and entering new places then
+/// translated hundreds again on the GPU thread (434 in 10 s, 2.3 s of it).
+int EvictPipelinesMode() {
+    static const int mode = [] {
+        const char* value = std::getenv("EDEN_NX2_EVICT_PIPELINES");
+        return value != nullptr && *value != '\0' ? value[0] - '0' : 2;
+    }();
+    return mode;
+}
 } // Anonymous namespace
 
 PipelineCache::~PipelineCache() {
@@ -2026,7 +2039,7 @@ void PipelineCache::EvictUnusedPipelines() {
     // EDEN_NX2_PRELOAD_ALL_PIPELINES asked for every cached pipeline built: evicting the ones not
     // used yet threw the preload away after 9000 frames (Ocarina: 22,510 of 24,285, then rebuilt
     // one by one in new places).
-    if (PreloadAllPipelines()) {
+    if (PreloadAllPipelines() || EvictPipelinesMode() == 0) {
         return;
     }
     // Each built pipeline holds ~0.45 MB of driver memory and none was ever destroyed, so it grew
@@ -2055,7 +2068,8 @@ void PipelineCache::EvictUnusedPipelines() {
         // GPU thread when it reaches that content (OoT: 1174 of 1346 evicted on the title screen,
         // 684 rebuilt in 10 s on entering the field). Past the budget they go like the rest, so a
         // large cache can't hold their driver memory for the whole session.
-        if (!pipeline->WasUsed() && kept_prebuilt < MaxUnusedPrebuiltPipelines) {
+        if (!pipeline->WasUsed() &&
+            (EvictPipelinesMode() == 2 || kept_prebuilt < MaxUnusedPrebuiltPipelines)) {
             ++kept_prebuilt;
             ++it;
             continue;

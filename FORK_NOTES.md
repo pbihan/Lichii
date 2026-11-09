@@ -15,6 +15,7 @@ zortos293/Lichii `nx2` at `3dae119a` (9 November 2026, after build 130) with the
 | opt-in `EDEN_NX2_PREFLUSH=1` for Switch 2 titles | open PR [zortos293/Lichii#259](https://github.com/zortos293/Lichii/pull/259) (`5b52831f`) | fewer CPU-read flushes in Ocarina of Time; off unless set |
 | guest accesses of cached memory without the cache mutexes, `EDEN_NX2_GUEST_FAST` | conongnang/Lichii `855f205b`, from Frizti/Fritchii (EXP35) | Ocarina of Time on an RX 9070 XT, Castle Town, as measured there: short walk 52.3 → 57.0 fps |
 | `EDEN_NX2_GUEST_FAST=2` by default, `0` restores the locked path | this fork, after conongnang/Lichii `886c0f3d` | keeps the A/B switch that `886c0f3d` removed |
+| boot-built pipelines are no longer evicted, `EDEN_NX2_EVICT_PIPELINES=1` restores upstream's 2000-pipeline budget, `=0` never evicts | this fork | RX 6600, 9,800 pipelines built at boot: 5,877 evicted after five minutes, then translated again on the GPU thread in new places (434 in 10 s). Costs ~0.45 MB of driver memory per kept pipeline |
 | bounds-check every ASTC decode and unswizzle image store | Frizti/Fritchii `f52631cf`, from CheezerWheezer/Lichii `132cc46c` | AMD: out-of-image stores corrupted other images and faulted the GPU (RX 6750 XT) |
 
 ## Things to know before testing
