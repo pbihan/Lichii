@@ -7,27 +7,29 @@
 
 ## What it contains
 
-zortos293/Lichii `nx2` at `ce9be9d1` (build 116 plus #657, #659 and #664) with these commits on top:
+zortos293/Lichii `nx2` at `3dae119a` (9 November 2026, after build 130) with these commits on top:
 
 | Commit | Origin | Purpose |
 |---|---|---|
 | Windows builds only, no release on push | this fork | CI only, do not merge upstream |
-| wait once per occlusion query resolve on AMD drivers | conongnang/Lichii `a48dcdf8`, from chuppatricky/Lichii `601d3712d2` | AMD: the driver waits on each query of a `WAIT_BIT` copy (11 ms of GPU time per frame on an RX 9070 XT, as reported there) |
-| `EDEN_NX2_QUERY_WAIT_ALL=1` restores the per-query wait, and the log states which resolve is used | this fork | A/B switch for the commit above |
-| opt-in `EDEN_NX2_PREFLUSH=1` for Switch 2 titles | open PR [zortos293/Lichii#259](https://github.com/zortos293/Lichii/pull/259) (`5b52831f`) | Ocarina of Time: fewer CPU-read flushes; the PR reports ~26 → ~40 fps in Kokiri Forest and some flicker. Off unless set |
-| reset the pending-channel poll timer on progress, 1-tick sleeps on Windows | open PR [zortos293/Lichii#621](https://github.com/zortos293/Lichii/pull/621) (`f8bd5af9`) | on Windows, the 50 us poll from #446 slept for 1 ms or more |
-| wait only for a macro DMA read's own query reports | open PR [zortos293/Lichii#559](https://github.com/zortos293/Lichii/pull/559) (`4f944e3b`, `816cf6cf`, `9526d695`) | Ocarina of Time: the PR measured this wait at 8-15% of the GPU back thread while walking |
+| opt-in `EDEN_NX2_PREFLUSH=1` for Switch 2 titles | open PR [zortos293/Lichii#259](https://github.com/zortos293/Lichii/pull/259) (`5b52831f`) | fewer CPU-read flushes in Ocarina of Time; off unless set |
+| guest accesses of cached memory without the cache mutexes, `EDEN_NX2_GUEST_FAST` | conongnang/Lichii `855f205b`, from Frizti/Fritchii (EXP35) | Ocarina of Time on an RX 9070 XT, Castle Town, as measured there: short walk 52.3 → 57.0 fps |
+| `EDEN_NX2_GUEST_FAST=2` by default, `0` restores the locked path | this fork, after conongnang/Lichii `886c0f3d` | keeps the A/B switch that `886c0f3d` removed |
+| bounds-check every ASTC decode and unswizzle image store | Frizti/Fritchii `f52631cf`, from CheezerWheezer/Lichii `132cc46c` | AMD: out-of-image stores corrupted other images and faulted the GPU (RX 6750 XT) |
 
 ## Things to know before testing
 
-- Cooperative matrices stay off on RDNA1/RDNA2 through upstream #657. An earlier revision of this
-  branch used its own device ID check, since removed.
-- The three open PRs above were cherry-picked as they stood on 8 November 2026; one include list
-  conflict in `vk_rasterizer.cpp` was resolved by keeping both sides.
-- The occlusion query change applies to AMD drivers only. Its effect on an RX 6600 had not been
-  measured when it was added.
-- The per-game setting "Ocarina of Time anti-aliasing: No sharpening" (from upstream) skips the
-  game's sharpening network.
+- Shader cache v2 (upstream #1036) replaces `vulkan.fork-v54.bin` with `lichii-cache.v2.bin` and
+  migrates the older file on the first boot. The older file is read, not changed.
+- Commits this branch carried earlier and dropped: the occlusion query change (upstream since
+  #679), #621 (upstream since `bf48fe92`), #559 (no longer fits upstream's query report rework)
+  and an `EDEN_NX2_VK_PIPELINE_CACHE` switch (the code it changed was replaced by #1036).
+- Not merged: Frizti/Fritchii (based on an older upstream, 109 conflicting files on 8 November)
+  and CheezerWheezer/Lichii `amd-superior` (43 conflicting files on 9 November, among them the
+  pipeline cache, GPU split and rasterizer). Both publish their own builds.
+- Measured on the RX 6600 + Ryzen 5 5600G in Kokiri Forest (build 10 of this fork): neither
+  `EDEN_NX2_PREFLUSH=1` nor #621 and #559 changed the frame time (35-47 ms either way), although
+  `EDEN_NX2_PREFLUSH=1` cut the CPU reads that flush the GPU from ~103/s to ~9.5/s.
 
 ## Builds
 
@@ -41,6 +43,6 @@ console. Do not share game files.
 ## License and credits
 
 GPL-3.0-or-later, like the projects it comes from (see `LICENSE.txt` and `LICENSES/`). The base
-code is by the zortos293/Lichii, Eglantine, Eden and yuzu contributors; the occlusion query change
-is by conongnang and chuppatricky. Commits added in this fork were written with the help of Claude
-(Anthropic) and are marked as such.
+code is by the zortos293/Lichii, Eglantine, Eden and yuzu contributors; the ported commits are by
+the authors named above (Frizti, conongnang, CheezerWheezer, and #259's author). Commits added in
+this fork were written with the help of Claude (Anthropic) and are marked as such.
